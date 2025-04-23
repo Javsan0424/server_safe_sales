@@ -80,15 +80,29 @@ class DataController {
         const { Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus } = req.body;
         
         if (!id || isNaN(Number(id))) {
-            return res.status(400).json({ success: false, message: "ID de negociación no válido" });
+            return res.status(400).json({ success: false, message: "ID inválido" });
         }
-
+    
         const query = `
             UPDATE Negociaciones SET 
-            Cliente_ID = ?, Fecha_Inicio = ?, Fecha_Cierre = ?, Estatus = ?
+            Cliente_ID = ?, 
+            Fecha_Inicio = ?, 
+            Fecha_Cierre = ?, 
+            Estatus = ?
             WHERE ID_Negociaciones = ?
         `;
-        this.handleQuery(query, res, [Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus, id]);
+        
+        db.query(query, [Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus, id], (err, result) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ success: false, message: "Error en la base de datos" });
+            }
+            
+            return res.json({ 
+                success: true,
+                message: "Negociación actualizada correctamente"
+            });
+        });
     };
 
 
