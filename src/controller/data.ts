@@ -77,20 +77,19 @@ class DataController {
 
     updateNegociacion = (req: Request, res: Response) => {
         const { id } = req.params;
-        const { Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus } = req.body;
+        const { Estatus } = req.body; // Only need status for drag-and-drop
     
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ success: false, message: "ID inválido" });
         }
     
-        if (!Cliente_ID || !Fecha_Inicio || !Estatus) {
-            return res.status(400).json({ success: false, message: "Faltan campos obligatorios" });
-        }
+        // For drag-and-drop, we mainly care about status
+        const Fecha_Cierre = ["Terminado", "Cancelado"].includes(Estatus) 
+            ? new Date().toISOString().split('T')[0] 
+            : null;
     
         const query = `
             UPDATE Negociaciones SET 
-            Cliente_ID = ?, 
-            Fecha_Inicio = ?, 
             Fecha_Cierre = ?, 
             Estatus = ?
             WHERE ID_Negociaciones = ?
@@ -98,25 +97,36 @@ class DataController {
     
         db.query(
             query,
-            [Cliente_ID, Fecha_Inicio, Fecha_Cierre || null, Estatus, id],
-            (err, result:any) => {
+            [Fecha_Cierre, Estatus, id],
+            (err, result: any) => {
                 if (err) {
                     console.error("Database error:", err);
-                    return res.status(500).json({ success: false, message: "Error en la base de datos" });
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "Error en la base de datos",
+                        error: err.message 
+                    });
                 }
     
                 if (result.affectedRows === 0) {
-                    return res.status(404).json({ success: false, message: "Negociación no encontrada" });
+                    return res.status(404).json({ 
+                        success: false, 
+                        message: "Negociación no encontrada" 
+                    });
                 }
     
                 return res.json({ 
                     success: true,
-                    message: "Negociación actualizada correctamente"
+                    message: "Negociación actualizada correctamente",
+                    negociacion: {
+                        ID_Negociaciones: id,
+                        Estatus,
+                        Fecha_Cierre: Fecha_Cierre
+                    }
                 });
             }
         );
     };
-    
 
 
 
