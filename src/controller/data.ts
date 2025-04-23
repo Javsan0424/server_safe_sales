@@ -611,40 +611,25 @@ class DataController {
     updateVenta = (req: Request, res: Response) => {
         const { id } = req.params;
         const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
-        
-        // Validate ID
+    
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ 
                 success: false, 
-                message: "ID de venta no válido" 
+                message: "Invalid sale ID format" 
             });
         }
     
-        // Convert and validate fields
         const comisionValue = Comision ? parseFloat(Comision) : 0;
-        const totalValue = parseFloat(Total);
-        const fechaValue = Fecha || new Date().toISOString().split('T')[0];
-    
+        const totalValue = parseInt(Total);
+        
         if (isNaN(totalValue)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Total debe ser un número válido" 
+                message: "Total must be a valid integer number" 
             });
         }
     
-        if (!['Efectivo', 'Tarjeta'].includes(Metodo_pago)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Método de pago inválido. Debe ser 'Efectivo' o 'Tarjeta'" 
-            });
-        }
-    
-        if (!['Pendiente', 'Pagado'].includes(Estado_pago)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Estado de pago inválido. Debe ser 'Pendiente' o 'Pagado'" 
-            });
-        }
+        const fechaValue = Fecha ? `${Fecha} 00:00:00` : `${new Date().toISOString().split('T')[0]} 00:00:00`;
     
         const query = `
             UPDATE Ventas SET 
@@ -669,26 +654,48 @@ class DataController {
             id
         ];
     
-        db.query(query, params, (err, result: any) => {
+        db.query(query, params, (err: any, result: any) => {
             if (err) {
-                console.error("Database error:", err);
+                console.error("Database error:", {
+                    code: err.code,
+                    errno: err.errno,
+                    message: err.message, 
+                    sql: err.sql
+                });
+    
+                if (err.errno === 1452) {
+                    const detail = err.message.includes('Cliente_ID') ? 
+                        "The specified client doesn't exist" : 
+                        "The specified product doesn't exist";
+                    return res.status(400).json({
+                        success: false,
+                        message: "Foreign key constraint fails",
+                        detail
+                    });
+                }
+    
                 return res.status(500).json({ 
                     success: false, 
-                    message: "Error en la base de datos",
-                    sqlError: err.message || err.message 
+                    message: "Database operation failed",
+                    errorDetails: {
+                        code: err.code,
+                        message: err.message,  
+                        sqlState: err.sqlState
+                    }
                 });
             }
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ 
                     success: false, 
-                    message: "Venta no encontrada o ningún cambio realizado" 
+                    message: "No sale found with the specified ID",
+                    ventaId: id
                 });
             }
             
             return res.json({ 
                 success: true,
-                message: "Venta actualizada correctamente",
+                message: "Sale updated successfully",
                 ventaId: id,
                 changes: result.changedRows
             });
