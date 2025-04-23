@@ -13,16 +13,24 @@ class DataHttphHandler{
     ventasHandler = dataController.getVentas;
 
     clientesHandler = dataController.getClientes;
-    
     addClienteHandler = (req: Request, res: Response): void => {
         dataController.addCliente(req, res);
     };
-
     deleteClienteHandler = (req: Request, res: Response): void => {
         dataController.deleteCliente(req, res);
     };
 
     productosHandler = dataController.getProductos;
+    addProductosHandler = (req: Request, res: Response): void => {
+        dataController.addProducto(req, res);
+    };
+    deleteProductosHandler = (req: Request, res: Response): void => {
+        dataController.deleteProducto(req, res);
+    };
+    updateProductosHandler = (req: Request, res: Response): void => {
+        dataController.updateProducto(req, res);
+    };
+
 
     negociacionesHandler = dataController.getNegociaciones;
     updateNegociacionesHandler = (req: Request, res: Response) => dataController.updateNegociacion(req, res);

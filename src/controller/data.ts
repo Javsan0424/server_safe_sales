@@ -126,53 +126,72 @@ class DataController {
 
     
 
-    deleteCliente = (req: Request, res: Response) => {
+    deleteCliente = (req: Request, res: Response): void => {
         const { id } = req.params;
         
         if (!id || isNaN(Number(id))) {
-            return res.status(400).json({ success: false, message: "ID de cliente no válido" });
+            res.status(400).json({ success: false, message: "ID de cliente no válido" });
+            return;
         }
-
-        // 1. Verificar si el cliente existe
+    
+        // 1. Verify client exists
         db.query<RowDataPacket[]>(
             'SELECT Cliente_ID FROM Clientes WHERE Cliente_ID = ?', 
             [id], 
             (err, result) => {
                 if (err) {
-                    return res.status(500).json({ success: false, message: "Error en la consulta a la base de datos" });
+                    console.error("Database error:", err);
+                    res.status(500).json({ success: false, message: "Error en la consulta a la base de datos" });
+                    return;
                 }
-
+    
                 if (result.length === 0) {
-                    return res.status(404).json({ success: false, message: "Cliente no encontrado" });
+                    res.status(404).json({ success: false, message: "Cliente no encontrado" });
+                    return;
                 }
-
-                // 2. Verificar relaciones
+    
+                // 2. Check for related records
                 db.query<RowDataPacket[]>(
                     `SELECT 1 as existe FROM Negociaciones WHERE Cliente_ID = ? 
-                    UNION 
-                    SELECT 1 as existe FROM Ventas WHERE Cliente_ID = ?`, 
+                     UNION 
+                     SELECT 1 as existe FROM Ventas WHERE Cliente_ID = ?`, 
                     [id, id], 
                     (err, relaciones) => {
                         if (err) {
-                            return res.status(500).json({ success: false, message: "Error en la consulta a la base de datos" });
+                            console.error("Database error:", err);
+                            res.status(500).json({ success: false, message: "Error en la consulta a la base de datos" });
+                            return;
                         }
-
+    
                         if (relaciones.length > 0) {
-                            return res.status(400).json({ 
+                            res.status(400).json({ 
                                 success: false, 
                                 message: "No se puede eliminar el cliente porque tiene negociaciones o ventas asociadas" 
                             });
+                            return;
                         }
-
-                        // 3. Eliminar el cliente
+    
+                        // 3. Delete the client
                         db.query<OkPacket>(
                             'DELETE FROM Clientes WHERE Cliente_ID = ?', 
                             [id], 
                             (err, result) => {
                                 if (err) {
-                                    return res.status(500).json({ success: false, message: "Error al eliminar el cliente" });
+                                    console.error("Database error:", err);
+                                    res.status(500).json({ success: false, message: "Error al eliminar el cliente" });
+                                    return;
                                 }
-                                res.json({ success: true, message: "Cliente eliminado correctamente" });
+                                
+                                if (result.affectedRows === 0) {
+                                    res.status(404).json({ success: false, message: "Cliente no encontrado" });
+                                    return;
+                                }
+                                
+                                res.json({ 
+                                    success: true, 
+                                    message: "Cliente eliminado correctamente",
+                                    deletedId: id
+                                });
                             }
                         );
                     }
