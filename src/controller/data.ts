@@ -78,9 +78,13 @@ class DataController {
     updateNegociacion = (req: Request, res: Response) => {
         const { id } = req.params;
         const { Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus } = req.body;
-        
+    
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ success: false, message: "ID inválido" });
+        }
+    
+        if (!Cliente_ID || !Fecha_Inicio || !Estatus) {
+            return res.status(400).json({ success: false, message: "Faltan campos obligatorios" });
         }
     
         const query = `
@@ -91,19 +95,28 @@ class DataController {
             Estatus = ?
             WHERE ID_Negociaciones = ?
         `;
-        
-        db.query(query, [Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus, id], (err, result) => {
-            if (err) {
-                console.error("Database error:", err);
-                return res.status(500).json({ success: false, message: "Error en la base de datos" });
+    
+        db.query(
+            query,
+            [Cliente_ID, Fecha_Inicio, Fecha_Cierre || null, Estatus, id],
+            (err, result:any) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ success: false, message: "Error en la base de datos" });
+                }
+    
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ success: false, message: "Negociación no encontrada" });
+                }
+    
+                return res.json({ 
+                    success: true,
+                    message: "Negociación actualizada correctamente"
+                });
             }
-            
-            return res.json({ 
-                success: true,
-                message: "Negociación actualizada correctamente"
-            });
-        });
+        );
     };
+    
 
 
 
