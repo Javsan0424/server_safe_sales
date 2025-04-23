@@ -283,54 +283,75 @@ class DataController {
     };
 
     // Update existing product
-    updateProducto = (req: Request, res: Response) => {
-        const { id } = req.params;
-        const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
+   updateProducto = (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
+    
+    // Validate ID
+    if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "ID de producto no válido" 
+        });
+    }
+
+    // Validate required fields
+    if (!Nombre || !Categoria) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Nombre y Categoría son campos obligatorios" 
+        });
+    }
+
+    // Validate numbers
+    if (isNaN(Precio) || isNaN(Stock)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Precio y Stock deben ser números válidos" 
+        });
+    }
+
+    const query = `
+        UPDATE Productos SET 
+        Nombre = ?, 
+        Precio = ?, 
+        Descripcion = ?, 
+        Stock = ?, 
+        Categoria = ?
+        WHERE Producto_ID = ?
+    `;
+    
+    db.query(query, [
+        Nombre, 
+        parseFloat(Precio), 
+        Descripcion || null, 
+        parseInt(Stock), 
+        Categoria, 
+        id
+    ], (err, result: OkPacket) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ 
+                success: false, 
+                message: "Error en la base de datos",
+                error: err.message 
+            });
+        }
         
-        // Validate ID
-        if (!id || isNaN(Number(id))) {
-            return res.status(400).json({ 
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
                 success: false, 
-                message: "ID de producto no válido" 
+                message: "Producto no encontrado" 
             });
         }
-
-        // Validate required fields
-        if (!Nombre || !Categoria) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Nombre y Categoría son campos obligatorios" 
-            });
-        }
-
-        // Validate numbers
-        if (isNaN(Precio) || isNaN(Stock)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Precio y Stock deben ser números válidos" 
-            });
-        }
-
-        const query = `
-            UPDATE Productos SET 
-            Nombre = ?, 
-            Precio = ?, 
-            Descripcion = ?, 
-            Stock = ?, 
-            Categoria = ?
-            WHERE Producto_ID = ?
-        `;
         
-        this.handleQuery(query, res, [
-            Nombre, 
-            parseFloat(Precio), 
-            Descripcion || null, 
-            parseInt(Stock), 
-            Categoria, 
-            id
-        ]);
-    };
-
+        return res.json({ 
+            success: true,
+            message: "Producto actualizado correctamente",
+            productId: id
+        });
+    });
+};
     // Delete product
     deleteProducto = (req: Request, res: Response) => {
         const { id } = req.params;
