@@ -29,6 +29,52 @@ class DataController {
     this.handleQuery(query, res);
     };
 
+    addNegociacion = (req: Request, res: Response) => {
+        const { Cliente_ID, Fecha_Inicio, Estatus } = req.body;
+        
+        // Validate required fields
+        if (!Cliente_ID || isNaN(Number(Cliente_ID))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Cliente_ID es un campo obligatorio y debe ser un número válido" 
+            });
+        }
+    
+        // Set default status if not provided
+        const status = Estatus || "Iniciado";
+        const startDate = Fecha_Inicio || new Date().toISOString().split('T')[0];
+    
+        const query = `
+            INSERT INTO Negociaciones 
+            (Cliente_ID, Fecha_Inicio, Estatus) 
+            VALUES (?, ?, ?)
+        `;
+        
+        db.query(query, [Cliente_ID, startDate, status], (err, result: ResultSetHeader) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "Error en la base de datos",
+                    error: err.message 
+                });
+            }
+            
+            if (result.affectedRows === 1) {
+                return res.status(201).json({ 
+                    success: true,
+                    message: "Negociación creada correctamente",
+                    negociacionId: result.insertId
+                });
+            } else {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "No se pudo crear la negociación" 
+                });
+            }
+        });
+    };
+
     updateNegociacion = (req: Request, res: Response) => {
         const { id } = req.params;
         const { Cliente_ID, Fecha_Inicio, Fecha_Cierre, Estatus } = req.body;

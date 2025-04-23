@@ -33,7 +33,12 @@ class DataHttphHandler{
 
 
     negociacionesHandler = dataController.getNegociaciones;
-    updateNegociacionesHandler = (req: Request, res: Response) => dataController.updateNegociacion(req, res);
+    addNegociacionHandler = (req: Request, res: Response): void => {
+        dataController.addNegociacion(req, res);
+    };
+    updateNegociacionesHandler = (req: Request, res: Response): void => {
+        dataController.updateNegociacion(req, res);
+    };
 
 
     empresasHandler = dataController.getEmpresas;

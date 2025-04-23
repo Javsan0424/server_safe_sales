@@ -21,6 +21,8 @@ router.put('/api/productos/:id', dataHttphHandler.updateProductosHandler);
 
 
 router.get('/api/negociaciones', dataHttphHandler.negociacionesHandler);
+router.post('/api/negociaciones', dataHttphHandler.addNegociacionHandler)
+router.put('/api/negociaciones/:id', dataHttphHandler.updateNegociacionesHandler)
 
 
 router.get('/api/empresas', dataHttphHandler.empresasHandler);
