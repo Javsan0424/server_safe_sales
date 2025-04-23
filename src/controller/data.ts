@@ -32,7 +32,6 @@ class DataController {
     addNegociacion = (req: Request, res: Response) => {
         const { Cliente_ID, Fecha_Inicio, Estatus } = req.body;
         
-        // Validate required fields
         if (!Cliente_ID || isNaN(Number(Cliente_ID))) {
             return res.status(400).json({ 
                 success: false, 
@@ -40,7 +39,6 @@ class DataController {
             });
         }
     
-        // Set default status if not provided
         const status = Estatus || "Iniciado";
         const startDate = Fecha_Inicio || new Date().toISOString().split('T')[0];
     
@@ -83,7 +81,6 @@ class DataController {
             return res.status(400).json({ success: false, message: "ID inválido" });
         }
     
-        // Validate status against ENUM values
         const validStatuses = ['Iniciado', 'Terminado', 'Cancelado', 'En Revisión'];
         if (!validStatuses.includes(Estatus)) {
             return res.status(400).json({ 
@@ -92,12 +89,10 @@ class DataController {
             });
         }
     
-        // Prepare update data
         const updateData: any = {
             Estatus
         };
     
-        // Set closing date if final status
         if (['Terminado', 'Cancelado'].includes(Estatus)) {
             updateData.Fecha_Cierre = new Date().toISOString().slice(0, 19).replace('T', ' ');
         } else {
@@ -232,7 +227,6 @@ class DataController {
             return;
         }
     
-        // 1. Verify client exists
         db.query<RowDataPacket[]>(
             'SELECT Cliente_ID FROM Clientes WHERE Cliente_ID = ?', 
             [id], 
@@ -248,7 +242,7 @@ class DataController {
                     return;
                 }
     
-                // 2. Check for related records
+        
                 db.query<RowDataPacket[]>(
                     `SELECT 1 as existe FROM Negociaciones WHERE Cliente_ID = ? 
                      UNION 
@@ -269,7 +263,7 @@ class DataController {
                             return;
                         }
     
-                        // 3. Delete the client
+                        
                         db.query<OkPacket>(
                             'DELETE FROM Clientes WHERE Cliente_ID = ?', 
                             [id], 
@@ -298,15 +292,15 @@ class DataController {
         );
     };
 
-    // Add new product
+    
     addProducto = (req: Request, res: Response) => {
         const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
         
-        console.log("Received product data:", req.body); // Debug log
+        console.log("Received product data:", req.body); 
     
-        // Validation
+        
         if (!Nombre || !Categoria) {
-            console.log("Validation failed: Missing name or category"); // Debug log
+            console.log("Validation failed: Missing name or category"); 
             return res.status(400).json({ 
                 success: false, 
                 message: "Nombre y Categoría son campos obligatorios" 
@@ -314,7 +308,7 @@ class DataController {
         }
     
         if (isNaN(Precio)) {
-            console.log("Validation failed: Invalid price"); // Debug log
+            console.log("Validation failed: Invalid price"); 
             return res.status(400).json({ 
                 success: false, 
                 message: "Precio debe ser un número válido" 
@@ -322,7 +316,7 @@ class DataController {
         }
     
         if (isNaN(Stock)) {
-            console.log("Validation failed: Invalid stock"); // Debug log
+            console.log("Validation failed: Invalid stock"); 
             return res.status(400).json({ 
                 success: false, 
                 message: "Stock debe ser un número válido" 
@@ -343,7 +337,7 @@ class DataController {
             Categoria
         ];
     
-        console.log("Executing query:", query, "with params:", params); // Debug log
+        console.log("Executing query:", query, "with params:", params); 
         
         db.query(query, params, (err, result: ResultSetHeader) => {
             if (err) {
@@ -355,7 +349,7 @@ class DataController {
                 });
             }
     
-            console.log("Insert result:", result); // Debug log
+            console.log("Insert result:", result); 
             
             if (result.affectedRows === 1) {
                 return res.status(201).json({ 
@@ -380,12 +374,12 @@ class DataController {
         });
     };
 
-    // Update existing product
+
    updateProducto = (req: Request, res: Response) => {
     const { id } = req.params;
     const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
     
-    // Validate ID
+    
     if (!id || isNaN(Number(id))) {
         return res.status(400).json({ 
             success: false, 
@@ -393,7 +387,7 @@ class DataController {
         });
     }
 
-    // Validate required fields
+    
     if (!Nombre || !Categoria) {
         return res.status(400).json({ 
             success: false, 
@@ -401,7 +395,7 @@ class DataController {
         });
     }
 
-    // Validate numbers
+   
     if (isNaN(Precio) || isNaN(Stock)) {
         return res.status(400).json({ 
             success: false, 
@@ -450,11 +444,11 @@ class DataController {
         });
     });
 };
-    // Delete product
+    
     deleteProducto = (req: Request, res: Response) => {
         const { id } = req.params;
         
-        // Validate ID
+        
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ 
                 success: false, 
@@ -462,7 +456,7 @@ class DataController {
             });
         }
 
-        // First check if product exists
+        
         db.query<RowDataPacket[]>(
             'SELECT Producto_ID FROM Productos WHERE Producto_ID = ?', 
             [id], 
@@ -482,7 +476,7 @@ class DataController {
                     });
                 }
 
-                // Check for related records in Ventas
+               
                 db.query<RowDataPacket[]>(
                     'SELECT 1 as existe FROM Ventas WHERE Producto_ID = ?', 
                     [id], 
@@ -502,7 +496,7 @@ class DataController {
                             });
                         }
 
-                        // If no related records, proceed with deletion
+                        
                         db.query<OkPacket>(
                             'DELETE FROM Productos WHERE Producto_ID = ?', 
                             [id], 
@@ -538,13 +532,13 @@ class DataController {
 
 
 
-    
 
-    // Add new sale
+
+    
     addVenta = (req: Request, res: Response) => {
         const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
         
-        // Validate required fields
+        
         if (!Cliente_ID || !Producto_ID || !Fecha || !Metodo_pago || !Estado_pago || !Total) {
             return res.status(400).json({ 
                 success: false, 
@@ -552,7 +546,7 @@ class DataController {
             });
         }
 
-        // Validate payment method
+        
         const validPaymentMethods = ['Efectivo', 'Tarjeta'];
         if (!validPaymentMethods.includes(Metodo_pago)) {
             return res.status(400).json({ 
@@ -561,7 +555,7 @@ class DataController {
             });
         }
 
-        // Validate payment status
+        
         const validPaymentStatus = ['Pendiente', 'Pagado'];
         if (!validPaymentStatus.includes(Estado_pago)) {
             return res.status(400).json({ 
@@ -570,7 +564,7 @@ class DataController {
             });
         }
 
-        // Validate numbers
+        
         if (isNaN(Comision) || isNaN(Total)) {
             return res.status(400).json({ 
                 success: false, 
@@ -613,10 +607,11 @@ class DataController {
         );
     };
 
-    // Update sale
+    
     updateVenta = (req: Request, res: Response) => {
         const { id } = req.params;
         const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
+        
         
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ 
@@ -624,41 +619,35 @@ class DataController {
                 message: "ID de venta no válido" 
             });
         }
-
-        // Validate required fields
+    
+        
         if (!Cliente_ID || !Producto_ID || !Fecha || !Metodo_pago || !Estado_pago || !Total) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Cliente, Producto, Fecha, Método de pago, Estado y Total son campos obligatorios" 
+                message: "Todos los campos son obligatorios" 
             });
         }
-
-        // Validate payment method
-        const validPaymentMethods = ['Efectivo', 'Tarjeta'];
-        if (!validPaymentMethods.includes(Metodo_pago)) {
+    
+        
+        if (!['Efectivo', 'Tarjeta'].includes(Metodo_pago)) {
             return res.status(400).json({ 
                 success: false, 
-                message: `Método de pago inválido. Use uno de: ${validPaymentMethods.join(', ')}`
+                message: "Método de pago inválido" 
             });
         }
-
-        // Validate payment status
-        const validPaymentStatus = ['Pendiente', 'Pagado'];
-        if (!validPaymentStatus.includes(Estado_pago)) {
+    
+        
+        if (!['Pendiente', 'Pagado'].includes(Estado_pago)) {
             return res.status(400).json({ 
                 success: false, 
-                message: `Estado de pago inválido. Use uno de: ${validPaymentStatus.join(', ')}`
+                message: "Estado de pago inválido" 
             });
         }
-
-        // Validate numbers
-        if (isNaN(Comision) || isNaN(Total)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Comisión y Total deben ser números válidos" 
-            });
-        }
-
+    
+        
+        const comisionValue = parseFloat(Comision) || 0;
+        const totalValue = parseFloat(Total);
+    
         const query = `
             UPDATE Ventas SET 
             Cliente_ID = ?,
@@ -671,36 +660,44 @@ class DataController {
             WHERE Ventas_ID = ?
         `;
         
-        db.query(
-            query,
-            [Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total, id],
-            (err, result: any) => {
-                if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({ 
-                        success: false, 
-                        message: "Error en la base de datos",
-                        error: err.message 
-                    });
-                }
-                
-                if (result.affectedRows === 0) {
-                    return res.status(404).json({ 
-                        success: false, 
-                        message: "Venta no encontrada" 
-                    });
-                }
-                
-                return res.json({ 
-                    success: true,
-                    message: "Venta actualizada correctamente",
-                    ventaId: id
+        const params = [
+            Cliente_ID,
+            Producto_ID,
+            comisionValue,
+            Fecha,
+            Metodo_pago,
+            Estado_pago,
+            totalValue,
+            id
+        ];
+    
+        db.query(query, params, (err, result: any) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "Error en la base de datos",
+                    sqlError: err.message 
                 });
             }
-        );
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: "Venta no encontrada" 
+                });
+            }
+            
+            return res.json({ 
+                success: true,
+                message: "Venta actualizada correctamente",
+                ventaId: id,
+                changes: result.changedRows
+            });
+        });
     };
 
-    // Delete sale
+    
     deleteVenta = (req: Request, res: Response) => {
         const { id } = req.params;
         
@@ -711,7 +708,7 @@ class DataController {
             });
         }
 
-        // First check if sale exists
+        
         db.query<RowDataPacket[]>(
             'SELECT Ventas_ID FROM Ventas WHERE Ventas_ID = ?', 
             [id], 
@@ -731,7 +728,7 @@ class DataController {
                     });
                 }
 
-                // If sale exists, proceed with deletion
+                
                 db.query<OkPacket>(
                     'DELETE FROM Ventas WHERE Ventas_ID = ?', 
                     [id], 
