@@ -612,7 +612,7 @@ class DataController {
         const { id } = req.params;
         const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
         
-        
+        // Validate ID
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ 
                 success: false, 
@@ -620,33 +620,31 @@ class DataController {
             });
         }
     
-        
-        if (!Cliente_ID || !Producto_ID || !Fecha || !Metodo_pago || !Estado_pago || !Total) {
+        // Convert and validate fields
+        const comisionValue = Comision ? parseFloat(Comision) : 0;
+        const totalValue = parseFloat(Total);
+        const fechaValue = Fecha || new Date().toISOString().split('T')[0];
+    
+        if (isNaN(totalValue)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Todos los campos son obligatorios" 
+                message: "Total debe ser un número válido" 
             });
         }
     
-        
         if (!['Efectivo', 'Tarjeta'].includes(Metodo_pago)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Método de pago inválido" 
+                message: "Método de pago inválido. Debe ser 'Efectivo' o 'Tarjeta'" 
             });
         }
     
-        
         if (!['Pendiente', 'Pagado'].includes(Estado_pago)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Estado de pago inválido" 
+                message: "Estado de pago inválido. Debe ser 'Pendiente' o 'Pagado'" 
             });
         }
-    
-        
-        const comisionValue = parseFloat(Comision) || 0;
-        const totalValue = parseFloat(Total);
     
         const query = `
             UPDATE Ventas SET 
@@ -664,7 +662,7 @@ class DataController {
             Cliente_ID,
             Producto_ID,
             comisionValue,
-            Fecha,
+            fechaValue,
             Metodo_pago,
             Estado_pago,
             totalValue,
@@ -677,14 +675,14 @@ class DataController {
                 return res.status(500).json({ 
                     success: false, 
                     message: "Error en la base de datos",
-                    sqlError: err.message 
+                    sqlError: err.message || err.message 
                 });
             }
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ 
                     success: false, 
-                    message: "Venta no encontrada" 
+                    message: "Venta no encontrada o ningún cambio realizado" 
                 });
             }
             
