@@ -200,6 +200,222 @@ class DataController {
         );
     };
 
+    // Add new product
+    addProducto = (req: Request, res: Response) => {
+        const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
+        
+        console.log("Received product data:", req.body); // Debug log
+    
+        // Validation
+        if (!Nombre || !Categoria) {
+            console.log("Validation failed: Missing name or category"); // Debug log
+            return res.status(400).json({ 
+                success: false, 
+                message: "Nombre y Categoría son campos obligatorios" 
+            });
+        }
+    
+        if (isNaN(Precio)) {
+            console.log("Validation failed: Invalid price"); // Debug log
+            return res.status(400).json({ 
+                success: false, 
+                message: "Precio debe ser un número válido" 
+            });
+        }
+    
+        if (isNaN(Stock)) {
+            console.log("Validation failed: Invalid stock"); // Debug log
+            return res.status(400).json({ 
+                success: false, 
+                message: "Stock debe ser un número válido" 
+            });
+        }
+    
+        const query = `
+            INSERT INTO Productos 
+            (Nombre, Precio, Descripcion, Stock, Categoria) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        
+        const params = [
+            Nombre, 
+            parseFloat(Precio), 
+            Descripcion || null, 
+            parseInt(Stock), 
+            Categoria
+        ];
+    
+        console.log("Executing query:", query, "with params:", params); // Debug log
+        
+        db.query(query, params, (err, result: ResultSetHeader) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "Error en la base de datos",
+                    error: err.message 
+                });
+            }
+    
+            console.log("Insert result:", result); // Debug log
+            
+            if (result.affectedRows === 1) {
+                return res.status(201).json({ 
+                    success: true,
+                    message: "Producto agregado correctamente",
+                    productId: result.insertId,
+                    product: {
+                        Producto_ID: result.insertId,
+                        Nombre,
+                        Precio: parseFloat(Precio),
+                        Descripcion,
+                        Stock: parseInt(Stock),
+                        Categoria
+                    }
+                });
+            } else {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "No se pudo agregar el producto" 
+                });
+            }
+        });
+    };
+
+    // Update existing product
+    updateProducto = (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { Nombre, Precio, Descripcion, Stock, Categoria } = req.body;
+        
+        // Validate ID
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de producto no válido" 
+            });
+        }
+
+        // Validate required fields
+        if (!Nombre || !Categoria) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Nombre y Categoría son campos obligatorios" 
+            });
+        }
+
+        // Validate numbers
+        if (isNaN(Precio) || isNaN(Stock)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Precio y Stock deben ser números válidos" 
+            });
+        }
+
+        const query = `
+            UPDATE Productos SET 
+            Nombre = ?, 
+            Precio = ?, 
+            Descripcion = ?, 
+            Stock = ?, 
+            Categoria = ?
+            WHERE Producto_ID = ?
+        `;
+        
+        this.handleQuery(query, res, [
+            Nombre, 
+            parseFloat(Precio), 
+            Descripcion || null, 
+            parseInt(Stock), 
+            Categoria, 
+            id
+        ]);
+    };
+
+    // Delete product
+    deleteProducto = (req: Request, res: Response) => {
+        const { id } = req.params;
+        
+        // Validate ID
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de producto no válido" 
+            });
+        }
+
+        // First check if product exists
+        db.query<RowDataPacket[]>(
+            'SELECT Producto_ID FROM Productos WHERE Producto_ID = ?', 
+            [id], 
+            (err, result) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "Error en la consulta a la base de datos" 
+                    });
+                }
+
+                if (result.length === 0) {
+                    return res.status(404).json({ 
+                        success: false, 
+                        message: "Producto no encontrado" 
+                    });
+                }
+
+                // Check for related records in Ventas
+                db.query<RowDataPacket[]>(
+                    'SELECT 1 as existe FROM Ventas WHERE Producto_ID = ?', 
+                    [id], 
+                    (err, ventas) => {
+                        if (err) {
+                            console.error("Database error:", err);
+                            return res.status(500).json({ 
+                                success: false, 
+                                message: "Error en la consulta a la base de datos" 
+                            });
+                        }
+
+                        if (ventas.length > 0) {
+                            return res.status(400).json({ 
+                                success: false, 
+                                message: "No se puede eliminar el producto porque tiene ventas asociadas" 
+                            });
+                        }
+
+                        // If no related records, proceed with deletion
+                        db.query<OkPacket>(
+                            'DELETE FROM Productos WHERE Producto_ID = ?', 
+                            [id], 
+                            (err, result) => {
+                                if (err) {
+                                    console.error("Database error:", err);
+                                    return res.status(500).json({ 
+                                        success: false, 
+                                        message: "Error al eliminar el producto" 
+                                    });
+                                }
+                                
+                                if (result.affectedRows === 0) {
+                                    return res.status(404).json({ 
+                                        success: false, 
+                                        message: "Producto no encontrado" 
+                                    });
+                                }
+                                
+                                return res.json({ 
+                                    success: true, 
+                                    message: "Producto eliminado correctamente",
+                                    deletedId: id
+                                });
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    };
+
 
     
 
