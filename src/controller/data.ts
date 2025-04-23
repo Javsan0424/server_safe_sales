@@ -108,7 +108,6 @@ class DataController {
             });
         });
     };
-
     
     addCliente = (req: Request, res: Response) => {
         const { Nombre, Email, Telefono, Empresa_ID } = req.body;

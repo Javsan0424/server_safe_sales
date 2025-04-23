@@ -10,6 +10,8 @@ router.get('/api/ventas', dataHttphHandler.ventasHandler);
 
 
 router.get('/api/clientes', dataHttphHandler.clientesHandler);
+router.post('/api/clientes', dataHttphHandler.addClienteHandler);
+router.delete('/api/clientes', dataHttphHandler.deleteClienteHandler);
 
 
 
