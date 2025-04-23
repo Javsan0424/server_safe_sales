@@ -6,7 +6,11 @@ const dataHttphHandler = new DataHttphHandler();
 const router = Router();
 
 router.get('/', dataHttphHandler.rootHandler);
+
 router.get('/api/ventas', dataHttphHandler.ventasHandler);
+router.post('/api/ventas', dataHttphHandler.addVentasHanlder);
+router.delete('/api/ventas/:id', dataHttphHandler.deleteVentasHanlder);
+router.put('/api/ventas/:id', dataHttphHandler.updateVentasHandler);
 
 
 router.get('/api/clientes', dataHttphHandler.clientesHandler);

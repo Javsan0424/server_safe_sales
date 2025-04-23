@@ -536,6 +536,231 @@ class DataController {
     };
 
 
+
+
+    
+
+    // Add new sale
+    addVenta = (req: Request, res: Response) => {
+        const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
+        
+        // Validate required fields
+        if (!Cliente_ID || !Producto_ID || !Fecha || !Metodo_pago || !Estado_pago || !Total) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Cliente, Producto, Fecha, Método de pago, Estado y Total son campos obligatorios" 
+            });
+        }
+
+        // Validate payment method
+        const validPaymentMethods = ['Efectivo', 'Tarjeta'];
+        if (!validPaymentMethods.includes(Metodo_pago)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Método de pago inválido. Use uno de: ${validPaymentMethods.join(', ')}`
+            });
+        }
+
+        // Validate payment status
+        const validPaymentStatus = ['Pendiente', 'Pagado'];
+        if (!validPaymentStatus.includes(Estado_pago)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Estado de pago inválido. Use uno de: ${validPaymentStatus.join(', ')}`
+            });
+        }
+
+        // Validate numbers
+        if (isNaN(Comision) || isNaN(Total)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Comisión y Total deben ser números válidos" 
+            });
+        }
+
+        const query = `
+            INSERT INTO Ventas 
+            (Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        db.query(
+            query,
+            [Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total],
+            (err, result: ResultSetHeader) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "Error en la base de datos",
+                        error: err.message 
+                    });
+                }
+                
+                if (result.affectedRows === 1) {
+                    return res.status(201).json({ 
+                        success: true,
+                        message: "Venta registrada correctamente",
+                        ventaId: result.insertId 
+                    });
+                } else {
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "No se pudo registrar la venta" 
+                    });
+                }
+            }
+        );
+    };
+
+    // Update sale
+    updateVenta = (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total } = req.body;
+        
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de venta no válido" 
+            });
+        }
+
+        // Validate required fields
+        if (!Cliente_ID || !Producto_ID || !Fecha || !Metodo_pago || !Estado_pago || !Total) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Cliente, Producto, Fecha, Método de pago, Estado y Total son campos obligatorios" 
+            });
+        }
+
+        // Validate payment method
+        const validPaymentMethods = ['Efectivo', 'Tarjeta'];
+        if (!validPaymentMethods.includes(Metodo_pago)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Método de pago inválido. Use uno de: ${validPaymentMethods.join(', ')}`
+            });
+        }
+
+        // Validate payment status
+        const validPaymentStatus = ['Pendiente', 'Pagado'];
+        if (!validPaymentStatus.includes(Estado_pago)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Estado de pago inválido. Use uno de: ${validPaymentStatus.join(', ')}`
+            });
+        }
+
+        // Validate numbers
+        if (isNaN(Comision) || isNaN(Total)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Comisión y Total deben ser números válidos" 
+            });
+        }
+
+        const query = `
+            UPDATE Ventas SET 
+            Cliente_ID = ?,
+            Producto_ID = ?,
+            Comision = ?,
+            Fecha = ?,
+            Metodo_pago = ?,
+            Estado_pago = ?,
+            Total = ?
+            WHERE Ventas_ID = ?
+        `;
+        
+        db.query(
+            query,
+            [Cliente_ID, Producto_ID, Comision, Fecha, Metodo_pago, Estado_pago, Total, id],
+            (err, result: any) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "Error en la base de datos",
+                        error: err.message 
+                    });
+                }
+                
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ 
+                        success: false, 
+                        message: "Venta no encontrada" 
+                    });
+                }
+                
+                return res.json({ 
+                    success: true,
+                    message: "Venta actualizada correctamente",
+                    ventaId: id
+                });
+            }
+        );
+    };
+
+    // Delete sale
+    deleteVenta = (req: Request, res: Response) => {
+        const { id } = req.params;
+        
+        if (!id || isNaN(Number(id))) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "ID de venta no válido" 
+            });
+        }
+
+        // First check if sale exists
+        db.query<RowDataPacket[]>(
+            'SELECT Ventas_ID FROM Ventas WHERE Ventas_ID = ?', 
+            [id], 
+            (err, result) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "Error en la consulta a la base de datos" 
+                    });
+                }
+
+                if (result.length === 0) {
+                    return res.status(404).json({ 
+                        success: false, 
+                        message: "Venta no encontrada" 
+                    });
+                }
+
+                // If sale exists, proceed with deletion
+                db.query<OkPacket>(
+                    'DELETE FROM Ventas WHERE Ventas_ID = ?', 
+                    [id], 
+                    (err, result) => {
+                        if (err) {
+                            console.error("Database error:", err);
+                            return res.status(500).json({ 
+                                success: false, 
+                                message: "Error al eliminar la venta" 
+                            });
+                        }
+                        
+                        if (result.affectedRows === 0) {
+                            return res.status(404).json({ 
+                                success: false, 
+                                message: "Venta no encontrada" 
+                            });
+                        }
+                        
+                        return res.json({ 
+                            success: true, 
+                            message: "Venta eliminada correctamente",
+                            deletedId: id
+                        });
+                    }
+                );
+            }
+        );
+    };
     
 
 
