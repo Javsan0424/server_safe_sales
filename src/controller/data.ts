@@ -619,17 +619,35 @@ class DataController {
             });
         }
     
+        
+        if (!Cliente_ID || !Producto_ID || !Total) {
+            return res.status(400).json({
+                success: false,
+                message: "Client, Product and Total are required fields"
+            });
+        }
+    
+        
         const comisionValue = Comision ? parseFloat(Comision) : 0;
-        const totalValue = parseInt(Total);
+        const totalValue = parseFloat(Total);
         
         if (isNaN(totalValue)) {
             return res.status(400).json({ 
                 success: false, 
-                message: "Total must be a valid integer number" 
+                message: "Total must be a valid number" 
             });
         }
     
-        const fechaValue = Fecha ? `${Fecha} 00:00:00` : `${new Date().toISOString().split('T')[0]} 00:00:00`;
+        let fechaValue;
+        try {
+            fechaValue = Fecha ? new Date(Fecha).toISOString().slice(0, 19).replace('T', ' ') : 
+                                new Date().toISOString().slice(0, 19).replace('T', ' ');
+        } catch (e) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid date format"
+            });
+        }
     
         const query = `
             UPDATE Ventas SET 
@@ -644,27 +662,31 @@ class DataController {
         `;
         
         const params = [
-            Cliente_ID,
-            Producto_ID,
+            Number(Cliente_ID),
+            Number(Producto_ID),
             comisionValue,
             fechaValue,
             Metodo_pago,
             Estado_pago,
             totalValue,
-            id
+            Number(id)
         ];
+    
+        console.log("Executing query:", query, "with params:", params); 
     
         db.query(query, params, (err: any, result: any) => {
             if (err) {
-                console.error("Database error:", {
+                console.error("Database error details:", {
                     code: err.code,
                     errno: err.errno,
-                    message: err.message, 
-                    sql: err.sql
+                    sqlMessage: err.sqlMessage, 
+                    sql: err.sql,
+                    stack: err.stack
                 });
     
+
                 if (err.errno === 1452) {
-                    const detail = err.message.includes('Cliente_ID') ? 
+                    const detail = err.sqlMessage.includes('Cliente_ID') ? 
                         "The specified client doesn't exist" : 
                         "The specified product doesn't exist";
                     return res.status(400).json({
@@ -679,7 +701,7 @@ class DataController {
                     message: "Database operation failed",
                     errorDetails: {
                         code: err.code,
-                        message: err.message,  
+                        sqlMessage: err.sqlMessage,
                         sqlState: err.sqlState
                     }
                 });
