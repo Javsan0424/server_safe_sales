@@ -77,16 +77,32 @@ class DataController {
 
     updateNegociacion = (req: Request, res: Response) => {
         const { id } = req.params;
-        const { Estatus } = req.body; // Only need status for drag-and-drop
+        const { Estatus } = req.body;
     
         if (!id || isNaN(Number(id))) {
             return res.status(400).json({ success: false, message: "ID inválido" });
         }
     
-        // For drag-and-drop, we mainly care about status
-        const Fecha_Cierre = ["Terminado", "Cancelado"].includes(Estatus) 
-            ? new Date().toISOString().split('T')[0] 
-            : null;
+        // Validate status against ENUM values
+        const validStatuses = ['Iniciado', 'Terminado', 'Cancelado', 'En Revisión'];
+        if (!validStatuses.includes(Estatus)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Estatus inválido. Use uno de: ${validStatuses.join(', ')}`
+            });
+        }
+    
+        // Prepare update data
+        const updateData: any = {
+            Estatus
+        };
+    
+        // Set closing date if final status
+        if (['Terminado', 'Cancelado'].includes(Estatus)) {
+            updateData.Fecha_Cierre = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        } else {
+            updateData.Fecha_Cierre = null;
+        }
     
         const query = `
             UPDATE Negociaciones SET 
@@ -97,14 +113,14 @@ class DataController {
     
         db.query(
             query,
-            [Fecha_Cierre, Estatus, id],
+            [updateData.Fecha_Cierre, updateData.Estatus, id],
             (err, result: any) => {
                 if (err) {
                     console.error("Database error:", err);
                     return res.status(500).json({ 
                         success: false, 
                         message: "Error en la base de datos",
-                        error: err.message 
+                        sqlError: err.message 
                     });
                 }
     
@@ -118,10 +134,9 @@ class DataController {
                 return res.json({ 
                     success: true,
                     message: "Negociación actualizada correctamente",
-                    negociacion: {
+                    data: {
                         ID_Negociaciones: id,
-                        Estatus,
-                        Fecha_Cierre: Fecha_Cierre
+                        ...updateData
                     }
                 });
             }
