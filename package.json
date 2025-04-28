@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "nodemon index.ts"
   },
   "keywords": [],
@@ -20,10 +20,29 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
+    "is-fullwidth-code-point": "^5.0.0",
     "mysql2": "^3.14.0",
     "next.js": "^1.0.3",
     "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
-  }
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^28.1.8",
+    "jest": "^28.1.3",
+    "string-width": "^7.2.0",
+    "strip-ansi": "^7.1.0",
+    "ts-jest": "^28.0.8",
+    "typescript": "^4.9.5"
+  },
+  "jest": {
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.tsx?$": "ts-jest"
+  },
+  "testMatch": ["**/*.test.(ts|js)"],
+  "moduleFileExtensions": ["ts", "js", "json", "node"],
+  "roots": ["<rootDir>"],
+  "verbose": true
+}
 }

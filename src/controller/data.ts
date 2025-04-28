@@ -16,7 +16,6 @@ class DataController {
 
     
     getVentas = (_req: Request, res: Response) => this.handleQuery('SELECT * FROM Ventas', res);
-    getVentasByID = (_req: Request, res: Response) => this.handleQuery('SELECT Clientes.Nombre, SUM(Ventas.Total) AS TotalVentas FROM Ventas JOIN Clientes ON Ventas.Cliente_ID = Clientes.ID WHERE Clientes.ID = ? GROUP BY Clientes.Nombre;', res)
     
     getClientes = (_req: Request, res: Response) => this.handleQuery('SELECT * FROM Clientes', res);
     getProductos = (_req: Request, res: Response) => this.handleQuery('SELECT * FROM Productos', res);
@@ -375,7 +374,6 @@ class DataController {
             }
         });
     };
-
 
    updateProducto = (req: Request, res: Response) => {
     const { id } = req.params;
